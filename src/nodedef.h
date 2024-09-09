@@ -266,8 +266,8 @@ enum AlphaMode : u8 {
 	ALPHAMODE_BLEND,
 	ALPHAMODE_CLIP,
 	ALPHAMODE_OPAQUE,
-	ALPHAMODE_LEGACY_COMPAT, /* only sent by old servers, equals OPAQUE */
-	AlphaMode_END // Dummy for validity check
+	ALPHAMODE_LEGACY_COMPAT, /* means either opaque or clip */
+	AlphaMode_END
 };
 
 
@@ -475,9 +475,11 @@ struct ContentFeatures
 		case NDT_NORMAL:
 		case NDT_LIQUID:
 		case NDT_FLOWINGLIQUID:
+			alpha = ALPHAMODE_OPAQUE;
+			break;
 		case NDT_NODEBOX:
 		case NDT_MESH:
-			alpha = ALPHAMODE_OPAQUE;
+			alpha = ALPHAMODE_LEGACY_COMPAT; // this should eventually be OPAQUE
 			break;
 		default:
 			alpha = ALPHAMODE_CLIP;
@@ -536,6 +538,16 @@ struct ContentFeatures
 #endif
 
 private:
+#ifndef SERVER
+	/*
+	 * Checks if any tile texture has any transparent pixels.
+	 * Prints a warning and returns true if that is the case, false otherwise.
+	 * This is supposed to be used for use_texture_alpha backwards compatibility.
+	 */
+	bool textureAlphaCheck(ITextureSource *tsrc, const TileDef *tiles,
+		int length);
+#endif
+
 	void setAlphaFromLegacy(u8 legacy_alpha);
 
 	u8 getAlphaForLegacy() const;
